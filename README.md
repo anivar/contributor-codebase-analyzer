@@ -60,23 +60,18 @@ Built and validated analyzing **1,091 commits across 3 staff engineers** in a Re
 ### 2. Install
 
 ```bash
-git clone https://github.com/anivar/contributor-codebase-analyzer.git
+npx skills add anivar/contributor-codebase-analyzer -g
 ```
 
-### 3. Run with Your AI Agent
+This auto-detects your AI agents (Claude Code, Cursor, Gemini CLI, GitHub Copilot, and others) and installs the skill to all of them.
 
-This is an Agent Skill — it's loaded by AI agents, not executed as a standalone CLI. Clone the repo, point your agent at a codebase, and ask it to analyze.
-
+**Manual install:**
 ```bash
-# Generic agent skill directory
+git clone https://github.com/anivar/contributor-codebase-analyzer.git
 ln -s "$(pwd)/contributor-codebase-analyzer" ~/.agents/skills/contributor-codebase-analyzer
-
-# If your agent uses a different skill path (e.g. ~/.claude/skills/), symlink there instead
 ```
 
-The agent reads `SKILL.md` as the entry point and loads references on demand.
-
-### 4. Onboard
+### 3. Onboard
 
 Navigate to your project and run:
 
@@ -86,7 +81,7 @@ Navigate to your project and run:
 
 This auto-detects your platform (GitHub/GitLab), repo, and org. No manual configuration needed.
 
-### 5. Use
+### 4. Use
 
 ```
 "Analyze github.com/alice-dev for 2025 annual review in repo org/repo"
