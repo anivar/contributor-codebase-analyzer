@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Background circle - warm, inviting -->
+  <circle cx="60" cy="60" r="58" fill="#1a1a2e" stroke="#e8a87c" stroke-width="2"/>
+
+  <!-- Git commit line - the journey -->
+  <path d="M30 85 Q40 70 45 60 Q50 50 55 42 Q60 34 70 28"
+        stroke="#85dcb0" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Commit dots - every commit matters -->
+  <circle cx="30" cy="85" r="4" fill="#e8a87c"/>
+  <circle cx="45" cy="60" r="4" fill="#e8a87c"/>
+  <circle cx="55" cy="42" r="4" fill="#e8a87c"/>
+  <circle cx="70" cy="28" r="4" fill="#e8a87c"/>
+
+  <!-- Sprout from the last commit - growth -->
+  <path d="M70 28 Q72 20 68 14" stroke="#85dcb0" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M70 28 Q76 22 80 18" stroke="#85dcb0" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <ellipse cx="66" cy="13" rx="4" ry="6" fill="#85dcb0" opacity="0.8" transform="rotate(-20 66 13)"/>
+  <ellipse cx="82" cy="16" rx="4" ry="6" fill="#85dcb0" opacity="0.8" transform="rotate(30 82 16)"/>
+
+  <!-- Magnifying glass handle - deep analysis -->
+  <line x1="78" y1="75" x2="95" y2="92" stroke="#e8a87c" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Magnifying glass circle -->
+  <circle cx="68" cy="65" r="16" fill="none" stroke="#e8a87c" stroke-width="2.5"/>
+
+  <!-- Code lines inside magnifying glass - reading every diff -->
+  <line x1="58" y1="60" x2="72" y2="60" stroke="#85dcb0" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>
+  <line x1="60" y1="65" x2="76" y2="65" stroke="#85dcb0" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  <line x1="57" y1="70" x2="69" y2="70" stroke="#85dcb0" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+</svg>
