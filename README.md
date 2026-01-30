@@ -190,10 +190,11 @@ This tool reads code to **grow engineers**, not judge them.
 - Use findings to start development conversations, not deliver verdicts
 - Share reports WITH the engineer, not just about them
 - Recognize strengths before discussing growth areas
-- Consider context: deadlines, on-call, team changes, unfamiliar codebases
-- Use `git blame` for knowledge mapping, not fault-finding
+- Consider repository and project context
+- Consider team context: deadlines, on-call, team changes, unfamiliar codebases
 
 **Don't:**
+- Analyze commits in isolation — diffs without project context are noise
 - Use metrics to justify termination without human context
 - Compare engineers as a ranking exercise — compare for complementary strengths
 - Treat anti-patterns as character flaws — they're often process or tooling gaps
