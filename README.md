@@ -39,15 +39,6 @@ This skill automates deep-dive analysis by:
 
 All analysis saves incrementally — interrupt and resume anytime without losing progress.
 
-## Real-World Results
-
-Built and validated analyzing **1,091 commits across 3 staff engineers** in a React Native codebase:
-
-- Found accuracy rates ranging from 78% to 92% across engineers
-- Identified production ownership gaps (single points of failure)
-- Generated evidence-backed development recommendations with specific commit references
-- Completed full analysis with quarterly breakdowns and comparison reports
-
 ## Getting Started
 
 ### 1. Prerequisites
