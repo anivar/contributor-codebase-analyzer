@@ -19,25 +19,31 @@
 
 ---
 
-Stop guessing about engineering growth. This Agent Skill reads **every commit diff** — not a sample — to give you evidence-backed contributor reviews, codebase health reports, and development recommendations.
+DORA metrics tell you how fast you're moving. They don't tell you where you're going.
+
+Dashboards full of PR volume, commit counts, and "impact scores" actively punish your best architects — the ones simplifying complexity rather than adding to it.
+
+This Agent Skill values **brevity over volume** and **design patterns over code churn**. It brings the rigor of manual code review to agentic workflows — reading every commit diff, not a sample.
 
 ## The Problem
 
-Engineering reviews rely on commit counts, PR numbers, and manager impressions. These miss what matters: **code quality, accuracy, growth trajectory, and architectural thinking.**
+Engineering reviews rely on vanity metrics and manager impressions. These miss what matters: an engineer who reduces a payment processor from 2,000 lines to 400 looks like "low output" on a dashboard. An engineer repeatedly shipping debug code to production looks like "high output."
 
-Manual code review of a year's work is impractical. A single engineer can produce 300-500 commits per year across dozens of modules.
+No dashboard shows you the difference. Reading the code does.
 
 ## The Solution
 
-This skill automates deep-dive analysis by:
+This skill doesn't count lines. It reads the diffs.
 
-- Reading every commit diff for each contributor
-- Calculating an **accuracy rate** (how often code ships without needing fixes)
-- Detecting anti-patterns and strengths from actual code changes
-- Generating structured growth reviews with development recommendations
-- Mapping codebase structure, cross-repo dependencies, and technical debt
+- Reads every commit diff for each contributor, quarterly
+- Calculates an **accuracy baseline** — how often code ships without needing fixes
+- Detects design improvements and anti-patterns from actual changes
+- Maps codebase structure, cross-repo dependencies, and technical debt
+- Generates growth reviews with specific commit evidence
 
-All analysis saves incrementally — interrupt and resume anytime without losing progress.
+No scores. No rankings. Accuracy rates surface where to look deeper — not verdicts.
+
+All analysis saves incrementally — built for agentic context limits. Interrupt and resume without losing progress.
 
 ## Getting Started
 
@@ -126,7 +132,7 @@ The skill follows a 7-phase process for contributor analysis:
 3. **Read ALL Diffs** — quarterly parallel agents with batch sizing to prevent failures
 4. **Bug Introduction** — self-reverts, crash-fixes, same-day fixes, hook bypass
 5. **Code Quality** — anti-patterns and strengths from actual diffs
-6. **Report Generation** — structured markdown with ratings and development assessment
+6. **Report Generation** — structured markdown with growth assessment and development plan
 7. **Comparison** — multi-engineer strengths comparison with evidence
 
 Batch sizing is enforced from hard limits discovered in production:
@@ -162,19 +168,19 @@ Batch sizing is enforced from hard limits discovered in production:
 ## Design Decisions
 
 **Why every commit, not sampling?**
-Sampling misses the story. An engineer's best work might be a 12-line fix that prevents a payment double-charge. Sampling skips it. Reading every diff is what experienced code reviewers do — we encoded that expertise into a repeatable process.
+Sampling misses the story. An engineer's best work might be a 12-line fix that prevents a payment double-charge. Sampling skips it. Reading every diff is what experienced code reviewers do — this skill encodes that expertise into a repeatable process.
 
-**Why periodic saving?**
-AI agents have finite context windows. Analyzing 400+ commits across 12 months can't fit in a single session. Periodic saving to `.cca/` with JSONL append-only profiles lets analysis span multiple agent sessions — picking up exactly where the previous one left off, never re-reading what's already understood.
+**Why an Agent Skill?**
+Analyzing a year of commits doesn't fit in a single AI session or context window. Agent Skills are self-contained expertise that save checkpoints, resume across sessions, and never re-read a diff already understood. This skill automates the reading — the thinking is still yours.
 
-**Why quality checks, not scores?**
-Numbers like commit counts, lines changed, or accuracy rates aren't evaluations — they're **baselines that surface where to look**. A low accuracy rate doesn't mean a bad engineer — it means "look closer at what's happening here." Maybe they own the riskiest module. Maybe they're fixing inherited bugs. The qualitative analysis — reading the actual diffs, understanding the context, assessing the judgment — is what matters. Numbers open the door. Human expertise walks through it.
+**Why baselines, not scores?**
+Numbers like commit counts, lines changed, or accuracy rates aren't evaluations — they're **baselines that surface where to look**. A low accuracy rate doesn't mean a bad engineer — it often means they own the riskiest module in the system. Numbers open the door. Reading the code walks through it.
 
 **Why constructive framing?**
-Coming from a FOSS background, `git blame` is a neutral tool — it maps knowledge, not fault. Every label, every comparison, every recommendation is framed for growth: "Developing" not "Below Expectations," "Growth Areas" not "Blockers," strengths before concerns. The fairness checks aren't afterthoughts — they're load-bearing.
+Strong engineering cultures grow people — they don't grade them. Every label, every comparison, every recommendation is framed for growth: "Developing" not "Below Expectations," "Growth Areas" not "Blockers," strengths before concerns. The fairness checks aren't afterthoughts — they're load-bearing.
 
 **Why both GitHub and GitLab?**
-Enterprise teams don't live on one platform. GitLab's nested subgroups, self-hosted instances, and different API patterns required separate handling. Auto-detection from `git remote -v` means zero configuration — the skill adapts to whatever the team uses.
+Enterprise teams don't live on one platform. Auto-detection from `git remote -v` means zero configuration — the skill adapts to whatever the team uses.
 
 ## Constructive Use
 
