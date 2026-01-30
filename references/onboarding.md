@@ -98,7 +98,6 @@ mkdir -p "$PROJECT/.cca"/{contributors,codebase,governance}
 
 cat > "$PROJECT/.cca/.cca-config.json" <<EOF
 {
-  "version": "3.0",
   "platform": "$PLATFORM",
   "cli_tool": "$CLI_TOOL",
   "repo": "$ORG/$REPO_NAME",

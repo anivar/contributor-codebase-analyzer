@@ -48,7 +48,7 @@ $PROJECT/.cca/
 The first line of every `.jsonl` file is a schema declaration:
 
 ```jsonl
-{"_schema":"contributor-profile","version":"2.0","fields":["type","timestamp","period","data"]}
+{"_schema":"contributor-profile","fields":["type","timestamp","period","data"]}
 {"type":"metrics","timestamp":"2025-01-15T10:30:00Z","period":"2025","data":{"commits":413,"prs":89,"reviews":42,"lines_added":45000,"lines_removed":12000}}
 {"type":"accuracy","timestamp":"2025-01-15T11:00:00Z","period":"2025","data":{"total_commits":413,"fix_related":91,"accuracy_rate":77.97,"self_reverts":3,"same_day_fixes":42}}
 {"type":"quality","timestamp":"2025-01-15T11:30:00Z","period":"2025-Q1","data":{"anti_patterns":{"debug_code":3,"empty_catch":1},"strengths":{"defensive_programming":12,"code_reduction":5}}}
@@ -169,7 +169,6 @@ For subsequent analyses (not first-time):
 
 ```json
 {
-  "version": "2.0",
   "repo": "org/repo-name",
   "org": "org-name",
   "created_at": "2025-01-15T10:00:00Z",

@@ -197,7 +197,6 @@ cmd_onboard() {
 
     cat > "$config" <<CONF
 {
-  "version": "3.0",
   "platform": "$platform",
   "cli_tool": "$cli_tool",
   "repo": "$org/$repo_name",
@@ -276,7 +275,6 @@ cmd_init() {
 
     cat > "$config" <<CONF
 {
-  "version": "3.0",
   "platform": "$platform",
   "cli_tool": "$cli_tool",
   "repo": "$repo",
@@ -634,7 +632,7 @@ cmd_append() {
 
     # If profile doesn't exist, write schema line first
     if [ ! -f "$profile" ]; then
-        echo '{"_schema":"contributor-profile","version":"3.0","fields":["type","timestamp","period","data"]}' > "$profile"
+        echo '{"_schema":"contributor-profile","fields":["type","timestamp","period","data"]}' > "$profile"
         echo -e "${BLUE}Created new profile: $profile${NC}"
     fi
 

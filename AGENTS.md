@@ -73,7 +73,7 @@ $PROJECT/.cca/
 First line of every `.jsonl` file is a schema declaration:
 
 ```jsonl
-{"_schema":"contributor-profile","version":"3.0","fields":["type","timestamp","period","data"]}
+{"_schema":"contributor-profile","fields":["type","timestamp","period","data"]}
 {"type":"metrics","timestamp":"2025-01-15T10:30:00Z","period":"2025","data":{"commits":413,"prs":89}}
 {"type":"accuracy","timestamp":"2025-01-15T11:00:00Z","period":"2025","data":{"accuracy_rate":77.97}}
 ```
@@ -127,7 +127,6 @@ fi
 
 ```json
 {
-  "version": "3.0",
   "platform": "github",
   "cli_tool": "gh",
   "repo": "org/repo-name",
