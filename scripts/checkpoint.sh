@@ -23,6 +23,23 @@ find_project_root() {
 PROJECT_ROOT=$(find_project_root)
 CA_DIR="$PROJECT_ROOT/.cca"
 
+# Validate a checkpoint path to prevent directory traversal
+validate_path() {
+    local path="$1"
+    if [[ "$path" == *..* ]]; then
+        echo "Error: path must not contain '..'"
+        exit 1
+    fi
+    if [[ "$path" == /* ]]; then
+        echo "Error: path must be relative (not absolute)"
+        exit 1
+    fi
+    if [[ ! "$path" =~ ^(contributors/@[a-zA-Z0-9._-]+|codebase|governance)(/.*)?$ ]]; then
+        echo "Error: path must start with contributors/@username, codebase, or governance"
+        exit 1
+    fi
+}
+
 # Colors (if terminal supports them)
 if [ -t 1 ]; then
     RED='\033[0;31m'
@@ -92,7 +109,10 @@ detect_platform() {
         # Try GitLab API probe for self-hosted
         local domain
         domain=$(echo "$remote_url" | sed -E 's|.*[@/]([^:/]+)[:/].*|\1|')
-        if curl -s --max-time 3 "https://$domain/api/v4/version" 2>/dev/null | grep -q "version"; then
+        # Validate domain: only allow alphanumeric, hyphens, dots (no path traversal or injection)
+        if [[ ! "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$ ]]; then
+            echo "github"
+        elif curl -s --max-time 3 "https://$domain/api/v4/version" 2>/dev/null | grep -q "version"; then
             echo "gitlab"
         else
             echo "github"
@@ -300,6 +320,7 @@ cmd_save() {
         echo "Error: path required (e.g., contributors/@alice, codebase, governance)"
         exit 1
     fi
+    validate_path "$path"
 
     local target_dir="$CA_DIR/$path"
     mkdir -p "$target_dir"
@@ -339,10 +360,23 @@ cmd_check() {
         echo "Usage: $(basename "$0") check <path> [--author EMAIL]"
         exit 1
     fi
+    validate_path "$path"
 
     # Parse --author flag
     if [ "$author" = "--author" ]; then
         author="${3:-}"
+    fi
+
+    # Validate author: reject if it contains shell metacharacters or git option injection
+    if [ -n "$author" ]; then
+        if [[ "$author" == -* ]]; then
+            echo "Error: author must not start with '-'"
+            exit 1
+        fi
+        if [[ "$author" =~ [[:cntrl:]\;\&\|\`\$\(\)\{\}] ]]; then
+            echo "Error: author contains invalid characters"
+            exit 1
+        fi
     fi
 
     local target_dir="$CA_DIR/$path"
@@ -399,6 +433,7 @@ cmd_resume() {
         echo "Error: path required (e.g., contributors/@alice)"
         exit 1
     fi
+    validate_path "$path"
 
     local target_dir="$CA_DIR/$path"
     local last_analyzed="$target_dir/.last_analyzed"
@@ -624,11 +659,28 @@ cmd_append() {
         echo "Usage: $(basename "$0") append contributors/@alice '{\"type\":\"metrics\",...}'"
         exit 1
     fi
+    validate_path "$path"
 
     local target_dir="$CA_DIR/$path"
     local profile="$target_dir/profile.jsonl"
 
     mkdir -p "$target_dir"
+
+    # Validate JSON before appending
+    if command -v jq >/dev/null 2>&1; then
+        if ! echo "$json_line" | jq empty 2>/dev/null; then
+            echo -e "${RED}Error: invalid JSON — refusing to append malformed data${NC}"
+            exit 1
+        fi
+    else
+        # Basic validation: must start with { and end with }
+        local trimmed
+        trimmed=$(echo "$json_line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        if [[ "$trimmed" != "{"* ]] || [[ "$trimmed" != *"}" ]]; then
+            echo -e "${RED}Error: input does not look like a JSON object${NC}"
+            exit 1
+        fi
+    fi
 
     # If profile doesn't exist, write schema line first
     if [ ! -f "$profile" ]; then
