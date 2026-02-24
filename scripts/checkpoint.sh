@@ -69,11 +69,11 @@ Commands:
   onboard     Interactive first-time setup (auto-detects platform, repo, org)
   init        Initialize .cca/ directory with config
   check       Check if analysis is needed (returns FRESH, CURRENT, or INCREMENTAL)
-  save        Update .last_analyzed timestamp and SHA for a path
-  resume      Show resume information for a path
+  save        Update .last_analyzed timestamp and SHA for a path (with integrity checksum)
+  resume      Show resume information for a path (verifies integrity checksum)
   status      Show status of all checkpoints
   ratelimit   Check API rate limit status for current platform
-  append      Append a JSON line to a contributor's profile.jsonl
+  append      Append a JSON line to a contributor's profile.jsonl (validates JSON)
 
 Paths:
   contributors/@username   Contributor checkpoint
@@ -331,12 +331,32 @@ cmd_save() {
     local last_sha
     last_sha=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
 
+    # Validate SHA format (40 hex chars)
+    if [[ ! "$last_sha" =~ ^[a-f0-9]{40}$ ]]; then
+        echo -e "${RED}Error: invalid git SHA — refusing to save checkpoint${NC}"
+        exit 1
+    fi
+
     echo "$timestamp" > "$target_dir/.last_analyzed"
     echo "$last_sha" >> "$target_dir/.last_analyzed"
+
+    # Generate integrity checksum for checkpoint files
+    local checksum_file="$target_dir/.checksum"
+    local checksum_input="$timestamp:$last_sha"
+
+    # Include profile.jsonl in checksum if it exists
+    if [ -f "$target_dir/profile.jsonl" ]; then
+        local profile_hash
+        profile_hash=$(shasum -a 256 "$target_dir/profile.jsonl" | cut -d' ' -f1)
+        checksum_input="$checksum_input:$profile_hash"
+    fi
+
+    echo "$checksum_input" | shasum -a 256 | cut -d' ' -f1 > "$checksum_file"
 
     echo -e "${GREEN}Checkpoint saved:${NC} $path"
     echo "  Timestamp: $timestamp"
     echo "  SHA: $last_sha"
+    echo "  Integrity: $(cat "$checksum_file" | head -c 12)..."
 
     # If this is a contributor, note tracking
     if [[ "$path" == contributors/@* ]]; then
@@ -395,6 +415,15 @@ cmd_check() {
     last_timestamp=$(head -1 "$last_analyzed")
     last_sha=$(tail -1 "$last_analyzed")
 
+    # Validate SHA format before use in git commands
+    if [[ ! "$last_sha" =~ ^[a-f0-9]{7,40}$ ]]; then
+        echo "FRESH"
+        echo "status=fresh"
+        echo "last_sha="
+        echo "reason=invalid_sha_format"
+        return 0
+    fi
+
     # SHA no longer exists in repo
     if ! git cat-file -t "$last_sha" >/dev/null 2>&1; then
         echo "FRESH"
@@ -447,6 +476,34 @@ cmd_resume() {
     local last_timestamp last_sha
     last_timestamp=$(head -1 "$last_analyzed")
     last_sha=$(tail -1 "$last_analyzed")
+
+    # Validate SHA format before use
+    if [[ ! "$last_sha" =~ ^[a-f0-9]{7,40}$ ]]; then
+        echo -e "${RED}  Error: .last_analyzed contains invalid SHA format${NC}"
+        echo "  File may be corrupted. Starting fresh analysis."
+        return 1
+    fi
+
+    # Verify checkpoint integrity if checksum exists
+    local checksum_file="$target_dir/.checksum"
+    if [ -f "$checksum_file" ]; then
+        local stored_checksum expected_input expected_checksum
+        stored_checksum=$(cat "$checksum_file")
+        expected_input="$last_timestamp:$last_sha"
+        if [ -f "$target_dir/profile.jsonl" ]; then
+            local profile_hash
+            profile_hash=$(shasum -a 256 "$target_dir/profile.jsonl" | cut -d' ' -f1)
+            expected_input="$expected_input:$profile_hash"
+        fi
+        expected_checksum=$(echo "$expected_input" | shasum -a 256 | cut -d' ' -f1)
+        if [ "$stored_checksum" != "$expected_checksum" ]; then
+            echo -e "${RED}  Warning: checkpoint integrity check FAILED${NC}"
+            echo "  Saved files may have been modified since last checkpoint."
+            echo "  Consider running a fresh analysis."
+        else
+            echo -e "${GREEN}  Integrity: verified${NC}"
+        fi
+    fi
 
     echo -e "${BLUE}Resume info for $path:${NC}"
     echo "  Last analyzed: $last_timestamp"
