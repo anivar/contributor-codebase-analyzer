@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  Created by <strong><a href="https://anivar.net">Anivar Aravind</a></strong>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/version-3.0.0-e8a87c?style=flat-square" alt="Version 3.0.0"/>
   <img src="https://img.shields.io/badge/agent_skill-agentic-85dcb0?style=flat-square" alt="Agent Skill"/>
   <img src="https://img.shields.io/badge/license-MIT-e8a87c?style=flat-square" alt="MIT License"/>
@@ -207,6 +211,27 @@ This tool reads code to **grow engineers**, not judge them.
 - Low-activity periods flagged for context (leave, onboarding, cross-team work)
 - "Peak then decline" flagged as "support needed," not penalized
 - All labels are growth-oriented: "Developing" not "Below Expectations"
+
+## Ecosystem — Skills by [Anivar Aravind](https://anivar.net)
+
+### Testing Skills
+| Skill | What it covers | Install |
+|-------|---------------|---------|
+| [jest-skill](https://github.com/anivar/jest-skill) | Jest best practices — mock design, async testing, matchers, timers, snapshots | `npx skills add anivar/jest-skill -g` |
+| [zod-testing](https://github.com/anivar/zod-testing) | Zod schema testing — safeParse, mock data, property-based | `npx skills add anivar/zod-testing -g` |
+| [msw-skill](https://github.com/anivar/msw-skill) | MSW 2.0 API mocking — handlers, responses, GraphQL | `npx skills add anivar/msw-skill -g` |
+| [redux-saga-testing](https://github.com/anivar/redux-saga-testing) | Redux-Saga testing — expectSaga, testSaga, providers | `npx skills add anivar/redux-saga-testing -g` |
+
+### Library & Framework Skills
+| Skill | What it covers | Install |
+|-------|---------------|---------|
+| [zod-skill](https://github.com/anivar/zod-skill) | Zod v4 schema validation, parsing, error handling | `npx skills add anivar/zod-skill -g` |
+| [redux-saga-skill](https://github.com/anivar/redux-saga-skill) | Redux-Saga effects, fork model, channels, RTK | `npx skills add anivar/redux-saga-skill -g` |
+| [msw-skill](https://github.com/anivar/msw-skill) | MSW 2.0 handlers, responses, migration | `npx skills add anivar/msw-skill -g` |
+
+## Author
+
+**[Anivar Aravind](https://anivar.net)** — Building AI agent skills for engineering excellence.
 
 ## License
 
