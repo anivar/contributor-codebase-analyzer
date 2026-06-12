@@ -220,25 +220,30 @@ Mandatory check + 7-phase sequential process for deep-dive contributor analysis.
 
 For `INCREMENTAL`, apply batch sizing to `new_commits` count only. Never re-read already-analyzed commits.
 
-### Batch Sizing Rules
+### Batch Sizing — by diff SIZE, not commit count (dynamic)
 
-| Commits | Risk | Action |
-|---------|------|--------|
-| 1-40 | SAFE | Read in main session |
-| 41-70 | MODERATE | Single agent → writes to file |
-| 71-90 | HIGH | Split into 2 agents |
-| 91+ | WILL FAIL | 3+ agents or monthly windows |
-
-**Count commits per quarter BEFORE launching agents:**
+The limit on an agent's reading is **churn**, not the number of commits. 90 one-line commits are trivial; 30 mega-commits overflow context. Plan from one mechanical pass, then pack greedily by size:
 
 ```bash
-for q in "01-01 04-01" "04-01 07-01" "07-01 10-01" "10-01 NEXTYEAR-01-01"; do
-    START=$(echo $q | cut -d' ' -f1)
-    END=$(echo $q | cut -d' ' -f2)
-    COUNT=$(git log --author="EMAIL" --after="YEAR-$START" --before="YEAR-$END" --oneline | wc -l)
-    echo "Q: $COUNT commits"
-done
+# One pass: every commit with its size (replaces the per-quarter count loops)
+./scripts/checkpoint.sh manifest --author "EMAIL" --after YEAR-01-01 --before NEXTYEAR-01-01 \
+  > /tmp/USERNAME-manifest.tsv   # SHA  date  +add  -del  files  subject
+
+# Greedy size-based packing into batches
+awk -F'\t' 'BEGIN{budget=2500;cap=60;b=1;sum=0;n=0}
+  {churn=$3+$4; if(n>0&&(sum+churn>budget||n>=cap)){b++;sum=0;n=0}
+   print b"\t"$0; sum+=churn; n++}' /tmp/USERNAME-manifest.tsv > /tmp/USERNAME-batches.tsv
+cut -f1 /tmp/USERNAME-batches.tsv | sort -n | uniq -c   # batch count + sizes
 ```
+
+| Cumulative churn in a batch | Action |
+|-----------------------------|--------|
+| small (a handful of commits) | Read in main session |
+| <= ~2,500 changed lines AND <= ~40 commits | One agent → writes to file |
+| larger | Packer splits into multiple parallel agents |
+| a single commit over budget | Its own agent — never split or group it |
+
+Defaults are tunable to the model's context. If an agent truncates, halve that batch's budget and re-run only it. Sizing by churn is what prevents coverage gaps — a fixed commit-count table over-splits cheap commits and under-splits heavy ones.
 
 ### Phase 1: Identity Discovery
 
@@ -445,73 +450,50 @@ If agent fails: halve the batch. If session exhausted: check which files exist, 
 
 A baseline that surfaces where to look deeper — not a score.
 
-### Formula
+### Judged from diffs, never from commit messages
+
+Grepping `fix`/`crash`/`revert` over commit *messages* measures vocabulary, not engineering — it rewards terse messages (`wip`) with a false high score and penalizes honest ones (`fix: null guard`). So accuracy is assigned **while reading each diff** (Phase 3). One verdict per commit, no double counting:
+
+| Verdict | What the diff shows | Counts against accuracy? |
+|---------|--------------------|--------------------------|
+| **clean** | New work, or a fix to inherited / others' code, that holds | No |
+| **exploratory** | Author reworks their own recent code as deliberate iteration | No |
+| **self-rework** | Author repairs a defect they shipped earlier in the window | Yes |
+| **production-breaking** | Broke a shared branch / crashed prod / reverted by someone else | Yes |
 
 ```
-Effective Accuracy = 100% - (fix-related commits / total commits)
+Accuracy = 100% - (self-rework + production-breaking) / total commits
 ```
 
-| Rate | Assessment |
+**Investigation bands, not grades** — always backed by the diffs read:
+
+| Band | Read it as |
 |------|-----------|
-| >90% | Excellent |
-| 85-90% | Good |
-| 80-85% | Needs attention |
-| <80% | Needs focused improvement |
+| >90% | Clean delivery — spot-check the riskiest module |
+| 85-90% | Healthy for complex / heavily-owned code |
+| 80-85% | Worth a conversation — read the rework cluster |
+| <80% | Read deeply first — often owns the riskiest code or inherited debt |
 
-### Detection Commands
+### Mechanical leads (to find diffs worth reading — never the verdict)
 
 ```bash
-# Self-reverts
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --grep="revert" --oneline
-
-# Reverted by others
-git log --after="YEAR-01-01" --before="YEAR+1-01-01" --grep="revert" --oneline | while read line; do
-    sha=$(echo "$line" | awk '{print $1}')
-    reverted_sha=$(git log -1 --format="%b" "$sha" | grep -oP '[a-f0-9]{7,40}')
-    if [ -n "$reverted_sha" ]; then
-        original_author=$(git log -1 --format="%ae" "$reverted_sha" 2>/dev/null)
-        reverter=$(git log -1 --format="%ae" "$sha")
-        if [ "$original_author" != "$reverter" ]; then
-            echo "REVERTED BY OTHER: $reverter reverted $original_author's $reverted_sha"
-        fi
-    fi
+# Revert ancestry: which commit reverts which, and across authors?
+git log --after="YEAR-01-01" --before="NEXTYEAR-01-01" --grep="revert" -i \
+  --pretty=format:"%H %ae %s" | while read sha email subj; do
+    reverted=$(git log -1 --format="%b" "$sha" | grep -oiE '[a-f0-9]{7,40}' | head -1)
+    [ -z "$reverted" ] && continue
+    orig=$(git log -1 --format="%ae" "$reverted" 2>/dev/null)
+    [ "$orig" = "$email" ] && echo "SELF-REVERT $sha->$reverted" \
+                           || echo "CROSS-REVERT $sha (by $email) -> $reverted (by $orig)"
 done
 
-# Same-day self-fixes
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --format="%ad %H %s" --date=short | \
-  awk '{date=$1; if(date==prev_date && ($0 ~ /fix/ || $0 ~ /Fix/)) print "SAME-DAY FIX:", $0; prev_date=date}'
-
-# Crash-fix commits
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --grep="crash" -i --oneline | wc -l
-
-# Multi-iteration tickets (4+ commits)
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --format="%s" | \
-  grep -oP '[A-Z]+-\d+' | sort | uniq -c | sort -rn | awk '$1 >= 4'
-
-# Hook bypass
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --format="%s %b" | grep -i "no-verify"
-
-# Console cleanup
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --oneline | grep -iE "console|reactotron" | wc -l
+# Hook bypass — a fact, safe to detect mechanically
+git log --author="EMAIL" --after="YEAR-01-01" --before="NEXTYEAR-01-01" --format="%H %s %b" | grep -i "no-verify"
 ```
 
-### Bug Severity Profile
+Cross-author reverts are the highest-signal leads — someone else had to undo the code. The agent reads both diffs before grading. Everything else (same-day fixes, crash fixes, debug cleanup) is judged from the diff during the Phase 3 read, not counted from message keywords.
 
-| Metric | Low | Medium | High |
-|--------|-----|--------|------|
-| Self-reverts | <=2/year | 3-5 | 6+ |
-| Reverted by others | 0 | 1 | 2+ |
-| Same-day fixes | <=5/year | 6-15 | 16+ |
-| Crash-fix commits | <=5/year | 6-15 | 16+ |
-| Hook bypass | 0 | — | Any |
-
-### Nuance
-
-- Exploratory reverts (trying approaches) = lower severity
-- Bug-shipping reverts = high severity
-- Cross-engineer reverts = highest severity
-
-**Save checkpoint:** Append accuracy to `profile.jsonl`.
+**Save checkpoint:** Append the verdict counts to `profile.jsonl` with an `evidence_file` pointing to the per-commit verdicts — the baseline always traces back to diffs.
 
 ---
 
@@ -548,8 +530,10 @@ git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --oneline 
 
 ### Volume Adjustment
 
+Uses the per-commit verdicts (one per commit, no double subtraction):
+
 ```
-Adjusted Volume = Total - fix-related - cleanup - reverts
+Adjusted Volume = clean + exploratory = Total - (self-rework + production-breaking)
 ```
 
 **Save checkpoint:** Append quality to `profile.jsonl`.

@@ -104,32 +104,51 @@ git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" \
   }'
 ```
 
-## Phase 3: Read ALL Commit Diffs
+## Phase 3: Read ALL Commit Diffs (one pass, agent-judged)
 
 **DO NOT sample. READ ALL.** This is the core differentiator of this skill.
 
-### Step 1: Count commits per quarter BEFORE launching agents
+This phase is a **single read** that produces everything at once: commit summary, complexity, code-quality notes, AND the accuracy verdict (Phase 4) and strengths/anti-patterns (Phase 5). The agent has the diff in front of it — it judges all dimensions in the same pass instead of re-walking history three times. Scripts gather the commit list and sizes; the **agent reads and judges**.
+
+### Step 1: One mechanical pass to plan the reading
+
+A single `manifest` call yields every commit with its size — replacing the old per-quarter and per-month count loops:
 
 ```bash
-for q in "01-01 04-01" "04-01 07-01" "07-01 10-01" "10-01 NEXTYEAR-01-01"; do
-    START=$(echo $q | cut -d' ' -f1)
-    END=$(echo $q | cut -d' ' -f2)
-    COUNT=$(git log --author="EMAIL" \
-      --after="YEAR-$START" --before="YEAR-$END" --oneline | wc -l)
-    echo "Q: $COUNT commits"
-done
+./scripts/checkpoint.sh manifest --author "EMAIL1" --author "EMAIL2" \
+  --after YEAR-01-01 --before NEXTYEAR-01-01 > /tmp/USERNAME-manifest.tsv
 ```
 
-### Step 2: Choose batch strategy
+Each line is `SHA <tab> date <tab> +added <tab> -removed <tab> files <tab> subject`. This is the only history walk needed — counts, monthly breakdown, and batch planning all read from this one file.
 
-| Commits in batch | Risk Level | Action |
-|-----------------|------------|--------|
-| 1-40 | SAFE | Read in main session, no agent needed |
-| 41-70 | MODERATE | Single agent, writes findings to file |
-| 71-90 | HIGH | Split into 2 sub-agents |
-| 91+ | WILL FAIL | Split into 3+ sub-agents or monthly windows |
+### Step 2: Batch by diff SIZE, not commit count (dynamic)
 
-**Real failure:** A Q1 batch of 106 commits exceeded agent prompt limits — caused a 20.7% coverage gap. Should have been split into monthly agents.
+The real limit on an agent's reading is **diff volume**, not the number of commits. 90 one-line commits are trivial; 30 mega-commits blow the context window. So pack batches by cumulative churn read straight from the manifest:
+
+```bash
+# Greedy size-based packing: start a new batch when a batch would exceed
+# the churn budget OR the commit cap, whichever comes first.
+awk -F'\t' '
+  BEGIN { budget=2500; cap=60; b=1; sum=0; n=0 }
+  { churn=$3+$4
+    if (n>0 && (sum+churn>budget || n>=cap)) { b++; sum=0; n=0 }
+    print b"\t"$0; sum+=churn; n++ }
+' /tmp/USERNAME-manifest.tsv > /tmp/USERNAME-batches.tsv
+
+# How many batches, and how big:
+cut -f1 /tmp/USERNAME-batches.tsv | sort -n | uniq -c
+```
+
+Guidance for the budget (tune to the model's context; these are defaults, not hard walls):
+
+| Cumulative churn in a batch | Action |
+|-----------------------------|--------|
+| <= ~2,500 changed lines AND <= ~40 commits | One agent (or read in main session if small) |
+| larger | Let the packer split it; each batch becomes one sub-agent |
+
+A single mega-commit that alone exceeds the budget becomes its own batch — never split a commit, but never group it with others either.
+
+**Why dynamic:** the old fixed table ("91+ WILL FAIL") mis-sized both ways — it over-split cheap commits and under-split heavy ones. Sizing by churn is what actually prevents the coverage gaps. If an agent still returns truncated, halve that batch's budget and re-run only that batch.
 
 ### Step 3: Agent output protocol
 
@@ -143,7 +162,7 @@ SCRATCHPAD/
 └── USERNAME-Q4-findings.md
 ```
 
-**Findings file format:**
+**Findings file format** — every commit carries its accuracy verdict, so Phase 4 needs no second pass:
 
 ```markdown
 # Q[N] Findings: USERNAME
@@ -156,8 +175,14 @@ SCRATCHPAD/
 - **Modules:** [directories touched]
 - **Lines:** +X/-Y (net Z)
 - **Complexity:** trivial|moderate|substantial|architectural
+- **Accuracy verdict:** clean | exploratory | self-rework | production-breaking
+  (see accuracy-analysis.md — judged from the diff, NOT the commit message)
 - **Quality notes:** [anti-patterns or strengths]
 - **Key observation:** [1-2 sentences]
+
+## Rework Ledger (basis for the accuracy baseline)
+- [SHA] self-rework: [what defect in their own earlier code this repaired]
+- [SHA] production-breaking: [what broke / reverted by whom]
 
 ## Anti-Patterns Found
 - [pattern]: [SHA] — [description]
@@ -189,13 +214,26 @@ Phase 5-7: Report generation (~10KB)
 Total:     ~40KB (vs ~250KB without file-based approach)
 ```
 
-## Phase 4: Bug Introduction Analysis
+## Phase 4: Accuracy — aggregate the verdicts (no second pass)
 
-See `accuracy-analysis.md` for full commands and formula.
+The per-commit accuracy verdicts were already assigned while reading diffs in Phase 3. Phase 4 just **tallies** them — there is no second walk over history and no grep over commit messages.
 
-## Phase 5: Code Quality Deep Analysis
+```bash
+# Count verdicts straight from the findings files
+grep -h "Accuracy verdict:" SCRATCHPAD/USERNAME-Q*-findings.md \
+  | grep -oE "clean|exploratory|self-rework|production-breaking" \
+  | sort | uniq -c
+```
 
-See `code-quality-catalog.md` for anti-pattern and strength catalogs.
+```
+Accuracy = 100% - (self-rework + production-breaking) / total commits
+```
+
+One verdict per commit means no double counting. Use the two mechanical leads from `accuracy-analysis.md` — cross-author revert ancestry and `--no-verify` detection — only to confirm the agent didn't miss a high-severity case worth re-reading. See `accuracy-analysis.md` for the full judgment model and investigation bands.
+
+## Phase 5: Code Quality — aggregate the catalog hits (no second pass)
+
+Anti-patterns and strengths were also recorded during the Phase 3 read. Phase 5 aggregates them per quarter. See `code-quality-catalog.md` for the catalog the agent applies while reading.
 
 ## Phase 6: Generate Performance Review Report
 

@@ -23,6 +23,16 @@ find_project_root() {
 PROJECT_ROOT=$(find_project_root)
 CA_DIR="$PROJECT_ROOT/.cca"
 
+# Portable SHA-256 — Linux ships sha256sum, macOS ships shasum.
+# Reads from stdin, prints the hex digest (no filename column).
+sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum | cut -d' ' -f1
+    else
+        shasum -a 256 | cut -d' ' -f1
+    fi
+}
+
 # Validate a checkpoint path to prevent directory traversal
 validate_path() {
     local path="$1"
@@ -59,6 +69,7 @@ Usage:
   $(basename "$0") onboard
   $(basename "$0") init --repo ORG/REPO [--org ORG] [--platform github|gitlab]
   $(basename "$0") check <path> [--author EMAIL]
+  $(basename "$0") manifest [--author EMAIL]... [--after DATE] [--before DATE] [--range REF..REF]
   $(basename "$0") save <path>
   $(basename "$0") resume <path>
   $(basename "$0") status
@@ -69,6 +80,8 @@ Commands:
   onboard     Interactive first-time setup (auto-detects platform, repo, org)
   init        Initialize .cca/ directory with config
   check       Check if analysis is needed (returns FRESH, CURRENT, or INCREMENTAL)
+  manifest    One git pass: emit per-commit size (SHA, date, +/- lines, files, subject)
+              so the agent can plan size-based reading batches. Gathers only — never judges.
   save        Update .last_analyzed timestamp and SHA for a path (with integrity checksum)
   resume      Show resume information for a path (verifies integrity checksum)
   status      Show status of all checkpoints
@@ -347,11 +360,11 @@ cmd_save() {
     # Include profile.jsonl in checksum if it exists
     if [ -f "$target_dir/profile.jsonl" ]; then
         local profile_hash
-        profile_hash=$(shasum -a 256 "$target_dir/profile.jsonl" | cut -d' ' -f1)
+        profile_hash=$(sha256 < "$target_dir/profile.jsonl")
         checksum_input="$checksum_input:$profile_hash"
     fi
 
-    echo "$checksum_input" | shasum -a 256 | cut -d' ' -f1 > "$checksum_file"
+    echo "$checksum_input" | sha256 > "$checksum_file"
 
     echo -e "${GREEN}Checkpoint saved:${NC} $path"
     echo "  Timestamp: $timestamp"
@@ -492,10 +505,10 @@ cmd_resume() {
         expected_input="$last_timestamp:$last_sha"
         if [ -f "$target_dir/profile.jsonl" ]; then
             local profile_hash
-            profile_hash=$(shasum -a 256 "$target_dir/profile.jsonl" | cut -d' ' -f1)
+            profile_hash=$(sha256 < "$target_dir/profile.jsonl")
             expected_input="$expected_input:$profile_hash"
         fi
-        expected_checksum=$(echo "$expected_input" | shasum -a 256 | cut -d' ' -f1)
+        expected_checksum=$(echo "$expected_input" | sha256)
         if [ "$stored_checksum" != "$expected_checksum" ]; then
             echo -e "${RED}  Warning: checkpoint integrity check FAILED${NC}"
             echo "  Saved files may have been modified since last checkpoint."
@@ -707,6 +720,77 @@ cmd_ratelimit() {
     fi
 }
 
+# Validate an author value before it reaches a git command (option/metachar injection).
+validate_author() {
+    local a="$1"
+    if [[ "$a" == -* ]]; then
+        echo "Error: author must not start with '-'" >&2
+        exit 1
+    fi
+    if [[ "$a" =~ [[:cntrl:]\;\&\|\`\$\(\)\{\}] ]]; then
+        echo "Error: author contains invalid characters" >&2
+        exit 1
+    fi
+}
+
+# Validate a YYYY-MM-DD date passed straight to git --after/--before.
+validate_date() {
+    local d="$1"
+    if [[ ! "$d" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+        echo "Error: date must be YYYY-MM-DD (got: $d)" >&2
+        exit 1
+    fi
+}
+
+cmd_manifest() {
+    # ONE mechanical git pass: emit per-commit size so the AGENT can plan
+    # size-based reading batches. Scripts gather; the AI reads and judges.
+    # Output (one line per commit, oldest first):
+    #   SHA<TAB>YYYY-MM-DD<TAB>added<TAB>removed<TAB>files<TAB>subject
+    local after="" before="" range="" no_merges="--no-merges"
+    local -a author_args=()
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --author)     validate_author "$2"; author_args+=(--author="$2"); shift 2 ;;
+            --after)      validate_date "$2"; after="$2"; shift 2 ;;
+            --before)     validate_date "$2"; before="$2"; shift 2 ;;
+            --range)      range="$2"; shift 2 ;;
+            --with-merges) no_merges=""; shift ;;
+            *)            echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+
+    # A range like LAST_SHA..HEAD must be two valid SHAs/refs around '..'.
+    if [ -n "$range" ]; then
+        if [[ ! "$range" =~ ^[A-Za-z0-9_./~^-]+\.\.[A-Za-z0-9_./~^-]+$ ]]; then
+            echo "Error: --range must look like REF..REF" >&2
+            exit 1
+        fi
+    fi
+
+    local -a log_args=(log $no_merges --reverse
+        --pretty=format:"C%x09%H%x09%ad%x09%s" --date=short --numstat)
+    [ -n "$after" ]  && log_args+=(--after="$after")
+    [ -n "$before" ] && log_args+=(--before="$before")
+    [ ${#author_args[@]} -gt 0 ] && log_args+=("${author_args[@]}")
+    [ -n "$range" ]  && log_args+=("$range")
+
+    # Aggregate numstat per commit in a single awk pass (binary files show '-').
+    git "${log_args[@]}" 2>/dev/null | awk -F'\t' '
+        /^C\t/ {
+            if (have) printf "%s\t%s\t%d\t%d\t%d\t%s\n", sha, date, add, del, files, subj
+            sha=$2; date=$3; subj=$4; add=0; del=0; files=0; have=1; next
+        }
+        NF>=3 {
+            files++
+            if ($1 ~ /^[0-9]+$/) add += $1
+            if ($2 ~ /^[0-9]+$/) del += $2
+        }
+        END { if (have) printf "%s\t%s\t%d\t%d\t%d\t%s\n", sha, date, add, del, files, subj }
+    '
+}
+
 cmd_append() {
     local path="${1:-}"
     local json_line="${2:-}"
@@ -755,6 +839,7 @@ case "${1:-}" in
     init)      shift; cmd_init "$@" ;;
     check)     shift; cmd_check "$@" ;;
     save)      shift; cmd_save "$@" ;;
+    manifest)  shift; cmd_manifest "$@" ;;
     resume)    shift; cmd_resume "$@" ;;
     status)    cmd_status ;;
     ratelimit) cmd_ratelimit ;;
