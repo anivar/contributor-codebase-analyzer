@@ -37,13 +37,14 @@ Systematic catalog of anti-patterns to flag and strengths to recognize when read
 
 ## Volume Adjustment
 
-Raw commit count is misleading. Adjust:
+Raw commit count is misleading. Adjust using the per-commit verdicts assigned while reading diffs (see `accuracy-analysis.md`) — one verdict per commit, so nothing is subtracted twice:
 
 ```
-Adjusted Volume = Total commits - fix-related - cleanup - reverts
+Adjusted Volume = commits judged "clean" + "exploratory"
+                = Total - (self-rework + production-breaking)
 ```
 
-Example: 413 raw commits, 21.9% fix-related = ~322 effective commits.
+Example: 413 commits, 73 of them self-rework or production-breaking = ~340 effective commits. Derived from reading the diffs, not from grepping `fix` over messages.
 
 ## Complexity-Per-Commit Assessment
 
