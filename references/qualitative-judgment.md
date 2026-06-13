@@ -180,6 +180,6 @@ This analysis exists to **grow engineers, not judge them.** Follow these princip
 ### Fairness Checks
 - Does the analysis period include major incidents, on-call rotations, or team transitions?
 - Are all contributors measured with the same time window and scope?
-- Are fix-related commits properly attributed (was the original bug theirs or inherited)?
+- Are rework commits properly attributed (was the original bug theirs or inherited)? A repair to someone else's code is "clean," not "self-rework."
 - Does "low activity" quarter correlate with leave, onboarding, or cross-team work?
 - Is the reviewer interpreting patterns charitably before critically?

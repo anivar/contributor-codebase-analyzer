@@ -13,7 +13,7 @@ compatibility: "Requires git and either gh (GitHub CLI) or glab (GitLab CLI). Op
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 3.0.0
+  version: 3.1.0
   tags: contributor-review, codebase-analysis, enterprise-governance, periodic-saving, github, gitlab
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(glab:*) Bash(jq:*) Bash(bc:*)
 ---
