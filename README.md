@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.0.0-e8a87c?style=flat-square" alt="Version 3.0.0"/>
+  <img src="https://img.shields.io/badge/version-3.1.0-e8a87c?style=flat-square" alt="Version 3.1.0"/>
   <img src="https://img.shields.io/badge/agent_skill-agentic-85dcb0?style=flat-square" alt="Agent Skill"/>
   <img src="https://img.shields.io/badge/license-MIT-e8a87c?style=flat-square" alt="MIT License"/>
   <img src="https://img.shields.io/badge/platform-GitHub_%7C_GitLab-85dcb0?style=flat-square" alt="GitHub | GitLab"/>

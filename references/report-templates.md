@@ -66,7 +66,7 @@ Numbers are baselines, not verdicts. Use qualitative levels:
 ```
 Month 1-2: Set up tooling (spell-check, lint rules, pre-commit hooks)
 Month 3-4: Write unit tests for owned calculation logic
-Month 5-6: Track fix-related commit ratio weekly; target <12%
+Month 5-6: Track self-rework ratio weekly (from diff verdicts, not message keywords); target <12%
 Mid-year check-in: Review metrics; if targets met, recommend promotion
 ```
 
