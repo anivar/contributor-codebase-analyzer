@@ -13,7 +13,7 @@ compatibility: "Requires git and either gh (GitHub CLI) or glab (GitLab CLI). Op
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 3.0.0
+  version: 3.1.0
   tags: contributor-review, codebase-analysis, enterprise-governance, periodic-saving, github, gitlab
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(glab:*) Bash(jq:*) Bash(bc:*)
 ---
@@ -117,42 +117,47 @@ $PROJECT/.cca/
 - `CURRENT` → skip, already analyzed, no new commits
 - `INCREMENTAL` → analyze only new commits since last checkpoint
 
-**Count commits before launching agents:**
+**Plan the reading in one mechanical pass** (size per commit, for dynamic batching):
 ```bash
-git log --author="EMAIL" --after="YEAR-01-01" --before="YEAR+1-01-01" --oneline | wc -l
+./scripts/checkpoint.sh manifest --author "EMAIL" --after YEAR-01-01 --before NEXTYEAR-01-01
+# -> SHA  date  +added  -removed  files  subject   (one line per commit)
 ```
 
-**Batch sizing (hard limits from real failures):**
+**Batch by diff SIZE, not commit count.** The limit is churn, not commit number — 90 one-line commits are trivial; 30 mega-commits overflow context. Pack batches greedily from the manifest:
 
-| Commits | Action |
-|---------|--------|
-| <=40 | Read in main session |
-| 41-70 | Single agent writes findings to file |
-| 71-90 | Split into 2 agents |
-| 91+ | WILL FAIL — split into 3+ or monthly agents |
+| Cumulative churn in a batch | Action |
+|-----------------------------|--------|
+| small (a handful of commits) | Read in main session |
+| <= ~2,500 changed lines AND <= ~40 commits | One agent, writes findings to file |
+| larger | Packer splits into multiple parallel agents |
+| a single commit over budget | Its own agent — never split a commit, never group it |
+
+Defaults are tunable to the model's context; if an agent truncates, halve that batch's budget and re-run only it. See `contributor-analysis.md` Phase 3 for the packer.
 
 **Agents write to files, return 3-line summaries.** Never return raw analysis inline.
 
 **7-phase annual review process:**
 1. Identity Discovery — find all git email variants
 2. Metrics — commits, PRs/MRs, reviews, lines (git + platform CLI)
-3. Read ALL Diffs — quarterly parallel agents, file-based output
-4. Bug Introduction — self-reverts, crash-fixes, same-day fixes, hook bypass
-5. Code Quality — anti-patterns and strengths from diff reading
+3. Read ALL Diffs — ONE pass, size-batched parallel agents; each commit gets type, complexity, quality notes, AND an accuracy verdict (file-based output)
+4. Accuracy — aggregate the verdicts from Phase 3 (no second history walk, no keyword grep)
+5. Code Quality — aggregate anti-patterns and strengths recorded during the Phase 3 read
 6. Report Generation — structured markdown with growth assessment + development plan
 7. Comparison — multi-engineer strengths comparison with evidence
 
-**Accuracy rate:**
+**Accuracy is judged from diffs, not commit messages.** While reading each diff, the agent gives one verdict per commit: `clean` / `exploratory` / `self-rework` / `production-breaking`. Grepping `fix`/`crash` over messages measures vocabulary, not engineering — it rewards terse messages and penalizes honest ones. See `accuracy-analysis.md`.
 ```
-Effective Accuracy = 100% - (fix-related commits / total commits)
+Accuracy = 100% - (self-rework + production-breaking commits / total commits)
 ```
 
-| Rate | Assessment |
+These are **investigation bands, not grades** — always backed by the specific diffs read:
+
+| Band | Read it as |
 |------|-----------|
-| >90% | Excellent |
-| 85-90% | Good |
-| 80-85% | Concerning |
-| <80% | Needs focused improvement |
+| >90% | Clean delivery — spot-check the riskiest module |
+| 85-90% | Healthy for complex / heavily-owned code |
+| 80-85% | Worth a conversation — read the rework cluster |
+| <80% | Read deeply first — often owns the riskiest code or inherited debt |
 
 **Tool separation:**
 - **Platform CLI** (`gh`/`glab`): Get commit lists, PR/MR counts, review counts, user lookup
@@ -193,6 +198,9 @@ If rate-limited mid-scan, progress is saved automatically. Resume skips already-
 ```bash
 # Onboard (first-time setup)
 ./scripts/checkpoint.sh onboard
+
+# Plan a contributor read in one git pass (size per commit, for size-based batching)
+./scripts/checkpoint.sh manifest --author alice@example.com --after 2025-01-01 --before 2026-01-01
 
 # Save current state
 ./scripts/checkpoint.sh save contributors/@alice
