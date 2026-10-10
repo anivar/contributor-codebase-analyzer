@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.0.0-e8a87c?style=flat-square" alt="Version 3.0.0"/>
+  <img src="https://img.shields.io/badge/version-3.1.0-e8a87c?style=flat-square" alt="Version 3.1.0"/>
   <img src="https://img.shields.io/badge/agent_skill-agentic-85dcb0?style=flat-square" alt="Agent Skill"/>
   <img src="https://img.shields.io/badge/license-MIT-e8a87c?style=flat-square" alt="MIT License"/>
   <img src="https://img.shields.io/badge/platform-GitHub_%7C_GitLab-85dcb0?style=flat-square" alt="GitHub | GitLab"/>
@@ -100,7 +100,7 @@ This auto-detects your platform (GitHub/GitLab), repo, and org. No manual config
 
 ### Contributor Reviews
 
-- **Accuracy rate**: `100% - (fix-related commits / total commits)` — a baseline that surfaces where to look deeper
+- **Accuracy rate**: `100% - (self-rework + production-breaking commits / total)` — judged by reading each diff, not by grepping commit messages; a baseline that surfaces where to look deeper
 - **Anti-pattern detection**: debug code shipped, empty catch blocks, hook bypass, mega-commits
 - **Strength identification**: defensive programming, offline-first design, code reduction, feature gating
 - **Quarter-by-quarter breakdown**: growth trajectory, complexity trends, domain breadth
@@ -133,20 +133,20 @@ The skill follows a 7-phase process for contributor analysis:
 
 1. **Identity Discovery** — finds all git email variants automatically
 2. **Metrics** — commits, PRs/MRs, reviews, lines changed
-3. **Read ALL Diffs** — quarterly parallel agents with batch sizing to prevent failures
-4. **Bug Introduction** — self-reverts, crash-fixes, same-day fixes, hook bypass
-5. **Code Quality** — anti-patterns and strengths from actual diffs
+3. **Read ALL Diffs** — one size-batched parallel pass; each commit gets its complexity, quality notes, and accuracy verdict in the same read
+4. **Accuracy** — aggregate the per-commit verdicts (no second history walk, no keyword grep)
+5. **Code Quality** — aggregate anti-patterns and strengths recorded during the read
 6. **Report Generation** — structured markdown with growth assessment and development plan
 7. **Comparison** — multi-engineer strengths comparison with evidence
 
-Batch sizing is enforced from hard limits discovered in production:
+Reading is batched by **diff size, not commit count** — the real limit on an agent is churn, not the number of commits. A single `checkpoint.sh manifest` pass sizes every commit, then batches are packed greedily:
 
-| Commits per batch | Strategy |
-|-------------------|----------|
-| 1-40 | Direct read |
-| 41-70 | Single agent |
-| 71-90 | 2 parallel agents |
-| 91+ | 3+ agents or monthly splits |
+| Cumulative churn in a batch | Strategy |
+|-----------------------------|----------|
+| small | Direct read |
+| <= ~2,500 changed lines & <= ~40 commits | Single agent |
+| larger | Packer splits into parallel agents |
+| one commit over budget | Its own agent |
 
 ## Project Structure
 
