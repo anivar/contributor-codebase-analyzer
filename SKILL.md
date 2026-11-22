@@ -1,19 +1,22 @@
 ---
 name: contributor-codebase-analyzer
 description: >
-  Deep-dive code analysis with periodic saving. Contributor mode reads every
-  commit diff for annual reviews, accuracy rates, and promotion readiness.
-  Codebase mode maps repository structure, cross-repo relationships, and
-  enterprise governance. Works with GitHub (gh) and GitLab (glab). Saves
-  checkpoints incrementally for resume across sessions.
+  Reads every commit diff of an engineer over a period to build an evidence-based annual or
+  promotion review (accuracy rate, code quality, production ownership), or maps a codebase:
+  repository structure, cross-repo dependencies and governance across a GitHub organisation or
+  GitLab group. Works through git with gh or glab and saves checkpoints, so a long analysis resumes
+  across sessions. Use this skill whenever the user asks to review a contributor's year of work,
+  compare engineers, judge promotion readiness, or map how the repositories of an organisation
+  depend on each other, even if they only ask "what did this engineer ship this year". Triggers on:
+  "annual review", "performance review" of an engineer, "promotion readiness", "contributor
+  analysis", "commit history of", "production ownership", "repo structure", "cross-repo
+  dependencies", "governance audit".
 license: MIT
-user-invocable: true
-agentic: true
 compatibility: "Requires git and either gh (GitHub CLI) or glab (GitLab CLI). Optional: jq, bc."
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 3.1.0
+  version: 3.1.1
   tags: contributor-review, codebase-analysis, enterprise-governance, periodic-saving, github, gitlab
 allowed-tools: Bash(git:*) Bash(gh:*) Bash(glab:*) Bash(jq:*) Bash(bc:*)
 ---

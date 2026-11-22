@@ -8,6 +8,15 @@ tags: accuracy, bugs, reverts, rework, diff-judged
 
 A quality baseline that surfaces where to look deeper. Measures how often code ships without needing follow-up fixes — low rates aren't judgments, they're signals to understand context (risky modules, inherited bugs, deadline pressure).
 
+## Contents
+
+- The principle: read the change, don't grep the message
+- How the agent judges each commit
+- Surfacing candidates (mechanical, cheap)
+- Accuracy calculation (deduped, one verdict per commit)
+- Severity, from the diff not the label
+- Periodic Saving
+
 ## The principle: read the change, don't grep the message
 
 **Accuracy is judged by reading diffs, not by matching keywords in commit messages.**

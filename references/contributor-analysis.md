@@ -10,6 +10,25 @@ Complete process for analyzing a contributor's performance by reading every comm
 
 Based on real-world experience analyzing 1,091 commits across 3 engineers in a React Native restaurant POS codebase.
 
+## Contents
+
+- Arguments Format
+- Phase 0: Check Before Analyzing
+- Phase 1: Identity Discovery
+- Phase 2: Gather Metrics
+- Phase 3: Read ALL Commit Diffs (one pass, agent-judged)
+- Phase 4: Accuracy — aggregate the verdicts (no second pass)
+- Phase 5: Code Quality — aggregate the catalog hits (no second pass)
+- Phase 6: Generate Performance Review Report
+- Phase 7: Comparison File (Multiple Engineers)
+- Multi-Engineer Orchestration
+- Production Ownership Mapping
+- Tool Separation
+- Recovery
+- Periodic Saving Integration
+- API Rate Limits
+- Error Handling
+
 ## Arguments Format
 
 ```

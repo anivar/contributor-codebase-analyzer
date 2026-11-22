@@ -1,0 +1,66 @@
+[
+  {
+    "query": "annual review time. go through everything priya shipped in 2026 across our github org",
+    "should_trigger": true
+  },
+  {
+    "query": "is sam ready for promotion to senior? look at their commits this year",
+    "should_trigger": true
+  },
+  {
+    "query": "map how the repos in our gitlab group depend on each other",
+    "should_trigger": true
+  },
+  {
+    "query": "compare the code contributions of the three backend engineers this year",
+    "should_trigger": true
+  },
+  {
+    "query": "who actually owns the payments service in production, going by git history",
+    "should_trigger": true
+  },
+  {
+    "query": "resume the contributor analysis from yesterday, it stopped halfway",
+    "should_trigger": true
+  },
+  {
+    "query": "audit governance across our github org: branch protection, CODEOWNERS, CI",
+    "should_trigger": true
+  },
+  {
+    "query": "what did alex ship this year? I need evidence, not vibes",
+    "should_trigger": true
+  },
+  {
+    "query": "review this PR",
+    "should_trigger": false
+  },
+  {
+    "query": "git blame this line and tell me why it changed",
+    "should_trigger": false
+  },
+  {
+    "query": "write a performance review for my report from these notes",
+    "should_trigger": false
+  },
+  {
+    "query": "count the lines of code in this repo",
+    "should_trigger": false
+  },
+  {
+    "query": "set up CODEOWNERS for the frontend folder",
+    "should_trigger": false
+  },
+  {
+    "query": "find the commit that introduced this bug",
+    "should_trigger": false
+  },
+  {
+    "query": "summarise the changes in the last release",
+    "should_trigger": false
+  },
+  {
+    "query": "draw an architecture diagram of this service",
+    "should_trigger": false
+  }
+]

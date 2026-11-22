@@ -8,6 +8,17 @@ tags: wisdom, growth, promotion, comparison, feedback, plateau
 
 Context-aware, judgment-based analysis of engineering maturity. Apply AFTER reading all commit diffs — provides the interpretation layer on top of quantitative data.
 
+## Contents
+
+- Engineering Wisdom Assessment
+- Situational Decision Analysis
+- Growth Trajectory Assessment
+- Promotion Decision Framework
+- Contextual Comparison
+- Feedback Generation Formats
+- Key Principles
+- Constructive Use Guidelines
+
 ## Engineering Wisdom Assessment
 
 ### Indicators of High Wisdom

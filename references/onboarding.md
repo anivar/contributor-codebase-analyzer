@@ -8,6 +8,20 @@ tags: onboarding, setup, first-run, platform-detection, configuration
 
 First-time setup for contributor-codebase-analyzer. Detects your git platform, configures the skill, and verifies prerequisites.
 
+## Contents
+
+- Quick Start
+- Step 1: Detect Git Platform
+- Step 2: Extract Repo and Org/Group
+- Step 3: Verify CLI Tools
+- Step 4: Detect Default Branch
+- Step 5: Create Configuration
+- Step 6: Add First Contributor (Optional)
+- Step 7: Verify Setup
+- What Happens Next
+- Platform-Specific Notes
+- Troubleshooting
+
 ## Quick Start
 
 ```bash

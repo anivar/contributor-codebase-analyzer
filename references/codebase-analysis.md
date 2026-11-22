@@ -8,6 +8,15 @@ tags: repo-structure, cross-repo, governance, dependencies, tech-debt, security
 
 Three-tier analysis system for repository structure, cross-repo relationships, and enterprise governance. Complements contributor analysis by answering "what is built" rather than "who built it."
 
+## Contents
+
+- Tier 1: Repository Structure
+- Tier 2: Cross-Repo Relationships
+- Tier 3: Enterprise Governance
+- IDE Context Generation
+- Periodic Saving
+- API Rate Limits
+
 ## Tier 1: Repository Structure
 
 Map the internals of a single repository.

@@ -8,6 +8,19 @@ tags: checkpoint, resume, jsonl, incremental, periodic-saving
 
 Incremental checkpoint system enabling analysis to survive session interruptions, resume from any phase, and accumulate findings over time without re-reading already-analyzed commits.
 
+## Contents
+
+- Design Principles
+- Directory Layout
+- JSONL Format
+- .last_analyzed Format
+- Checkpoint Protocol
+- Configuration File
+- Helper Script
+- Integration With Analysis Phases
+- Rate Limit Pause and Resume
+- Querying Saved State
+
 ## Design Principles
 
 1. **Append-only writes** — never read-modify-write; always append new entries
